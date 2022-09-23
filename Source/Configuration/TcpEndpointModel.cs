@@ -31,7 +31,7 @@ namespace MQTTnet.Server.Configuration
         /// <summary>
         /// Listen Port
         /// </summary>
-        public int Port { get; set; } = 1883;
+        public int Port { get; set; } = 1884;
 
         /// <summary>
         /// Read IPv4

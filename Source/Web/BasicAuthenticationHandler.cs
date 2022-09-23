@@ -5,12 +5,10 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
-using IronPython.Runtime;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
-using Microsoft.Scripting;
 
 namespace MQTTnet.Server.Web
 {
@@ -54,24 +52,11 @@ namespace MQTTnet.Server.Web
                     password = credentials[1];
                 }
 
-                var context = new PythonDictionary
-                {
-                    ["header_value"] = headerValue,
-                    ["scheme"] = scheme,
-                    ["parameter"] = parameter,
-                    ["username"] = username,
-                    ["password"] = password,
-                    ["is_authenticated"] = false
-                };
 
-                if (!ValidateUser(context))
-                {
-                    return AuthenticateResult.Fail("Invalid credentials.");
-                }
 
                 var claims = new[]
                 {
-                    new Claim(ClaimTypes.NameIdentifier, context.get("username") as string ?? string.Empty)
+                    new Claim(ClaimTypes.NameIdentifier, string.Empty)
                 };
 
                 var identity = new ClaimsIdentity(claims, Scheme.Name);
@@ -92,27 +77,27 @@ namespace MQTTnet.Server.Web
             }
         }
 
-        private bool ValidateUser(PythonDictionary context)
+        private bool ValidateUser()
         {
-            var handlerPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Web", "authorization_handler.py");
-            if (!File.Exists(handlerPath))
-            {
-                return false;
-            }
+            //var handlerPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Web", "authorization_handler.py");
+            //if (!File.Exists(handlerPath))
+            //{
+            //    return false;
+            //}
 
-            var code = File.ReadAllText(handlerPath);
+            //var code = File.ReadAllText(handlerPath);
 
-            var scriptEngine = IronPython.Hosting.Python.CreateEngine();
-            //scriptEngine.Runtime.IO.SetOutput(new PythonIOStream(_logger.), Encoding.UTF8);
+            //var scriptEngine = IronPython.Hosting.Python.CreateEngine();
+            ////scriptEngine.Runtime.IO.SetOutput(new PythonIOStream(_logger.), Encoding.UTF8);
 
-            var scriptScope = scriptEngine.CreateScope();
-            var scriptSource = scriptScope.Engine.CreateScriptSourceFromString(code, SourceCodeKind.File);
-            var compiledCode = scriptSource.Compile();
-            compiledCode.Execute(scriptScope);
-            var function = scriptScope.Engine.Operations.GetMember<PythonFunction>(scriptScope, "handle_authenticate");
-            scriptScope.Engine.Operations.Invoke(function, context);
+            //var scriptScope = scriptEngine.CreateScope();
+            //var scriptSource = scriptScope.Engine.CreateScriptSourceFromString(code, SourceCodeKind.File);
+            //var compiledCode = scriptSource.Compile();
+            //compiledCode.Execute(scriptScope);
+            //var function = scriptScope.Engine.Operations.GetMember<PythonFunction>(scriptScope, "handle_authenticate");
+            //scriptScope.Engine.Operations.Invoke(function, context);
 
-            return context.get("is_authenticated", false) as bool? == true;
+            return true;
         }
     }
 }

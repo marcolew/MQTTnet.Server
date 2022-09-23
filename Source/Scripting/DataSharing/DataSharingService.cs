@@ -7,19 +7,15 @@ namespace MQTTnet.Server.Scripting.DataSharing
     public class DataSharingService
     {
         readonly Dictionary<string, object> _storage = new Dictionary<string, object>();
-        readonly PythonScriptHostService _pythonScriptHostService;
         readonly ILogger<DataSharingService> _logger;
 
-        public DataSharingService(PythonScriptHostService pythonScriptHostService, ILogger<DataSharingService> logger)
+        public DataSharingService(ILogger<DataSharingService> logger)
         {
-            _pythonScriptHostService = pythonScriptHostService ?? throw new ArgumentNullException(nameof(pythonScriptHostService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public void Configure()
         {
-            _pythonScriptHostService.RegisterProxyObject("write_shared_data", new Action<string, object>(Write));
-            _pythonScriptHostService.RegisterProxyObject("read_shared_data", new Func<string, object, object>(Read));
         }
 
         public void Write(string key, object value)

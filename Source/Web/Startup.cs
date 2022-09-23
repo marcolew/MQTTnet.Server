@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
-using Microsoft.Scripting.Utils;
+//using Microsoft.Scripting.Utils;
 using MQTTnet.AspNetCore;
 using MQTTnet.Server.Configuration;
 using MQTTnet.Server.Logging;
@@ -37,7 +37,7 @@ namespace MQTTnet.Server.Web
         public void Configure(
             IApplicationBuilder application,
             MqttServerService mqttServerService,
-            PythonScriptHostService pythonScriptHostService,
+            //PythonScriptHostService pythonScriptHostService,
             DataSharingService dataSharingService,
             MqttSettingsModel mqttSettings)
         {
@@ -62,7 +62,7 @@ namespace MQTTnet.Server.Web
             ConfigureWebSocketEndpoint(application, mqttServerService, mqttSettings);
 
             dataSharingService.Configure();
-            pythonScriptHostService.Configure();
+            //pythonScriptHostService.Configure();
 
             mqttServerService.Configure();
 
@@ -94,8 +94,8 @@ namespace MQTTnet.Server.Web
 
             ReadMqttSettings(services);
 
-            services.AddSingleton<PythonIOStream>();
-            services.AddSingleton<PythonScriptHostService>();
+            //services.AddSingleton<PythonIOStream>();
+            //services.AddSingleton<PythonScriptHostService>();
             services.AddSingleton<DataSharingService>();
 
             services.AddSingleton<MqttNetLoggerWrapper>();
@@ -164,9 +164,9 @@ namespace MQTTnet.Server.Web
             Configuration.Bind("MQTT", mqttSettings);
             services.AddSingleton(mqttSettings);
 
-            var scriptingSettings = new ScriptingSettingsModel();
-            Configuration.Bind("Scripting", scriptingSettings);
-            services.AddSingleton(scriptingSettings);
+            //var scriptingSettings = new ScriptingSettingsModel();
+            //Configuration.Bind("Scripting", scriptingSettings);
+            //services.AddSingleton(scriptingSettings);
         }
 
         static void ConfigureWebSocketEndpoint(
@@ -191,7 +191,7 @@ namespace MQTTnet.Server.Web
 
             if (mqttSettings.WebSocketEndPoint.AllowedOrigins?.Any() == true)
             {
-                webSocketOptions.AllowedOrigins.AddRange(mqttSettings.WebSocketEndPoint.AllowedOrigins);
+                //webSocketOptions.AllowedOrigins.AddRange(mqttSettings.WebSocketEndPoint.AllowedOrigins);
             }
 
             application.UseWebSockets(webSocketOptions);

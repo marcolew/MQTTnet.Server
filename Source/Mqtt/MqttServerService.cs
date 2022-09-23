@@ -1,5 +1,4 @@
-﻿using IronPython.Runtime;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using MQTTnet.Adapter;
 using MQTTnet.AspNetCore;
@@ -34,7 +33,6 @@ namespace MQTTnet.Server.Mqtt
         readonly IMqttServer _mqttServer;
         readonly MqttSubscriptionInterceptor _mqttSubscriptionInterceptor;
         readonly MqttUnsubscriptionInterceptor _mqttUnsubscriptionInterceptor;
-        readonly PythonScriptHostService _pythonScriptHostService;
         readonly MqttWebSocketServerAdapter _webSocketServerAdapter;
 
         public MqttServerService(
@@ -49,7 +47,6 @@ namespace MQTTnet.Server.Mqtt
             MqttUnsubscriptionInterceptor mqttUnsubscriptionInterceptor,
             MqttApplicationMessageInterceptor mqttApplicationMessageInterceptor,
             MqttServerStorage mqttServerStorage,
-            PythonScriptHostService pythonScriptHostService,
             ILogger<MqttServerService> logger)
         {
             _settings = mqttSettings ?? throw new ArgumentNullException(nameof(mqttSettings));
@@ -62,7 +59,6 @@ namespace MQTTnet.Server.Mqtt
             _mqttUnsubscriptionInterceptor = mqttUnsubscriptionInterceptor ?? throw new ArgumentNullException(nameof(mqttUnsubscriptionInterceptor));
             _mqttApplicationMessageInterceptor = mqttApplicationMessageInterceptor ?? throw new ArgumentNullException(nameof(mqttApplicationMessageInterceptor));
             _mqttServerStorage = mqttServerStorage ?? throw new ArgumentNullException(nameof(mqttServerStorage));
-            _pythonScriptHostService = pythonScriptHostService ?? throw new ArgumentNullException(nameof(pythonScriptHostService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _webSocketServerAdapter = new MqttWebSocketServerAdapter(mqttFactory.Logger);
@@ -81,7 +77,6 @@ namespace MQTTnet.Server.Mqtt
 
         public void Configure()
         {
-            _pythonScriptHostService.RegisterProxyObject("publish", new Action<PythonDictionary>(Publish));
 
             _mqttServerStorage.Configure();
 
@@ -127,51 +122,6 @@ namespace MQTTnet.Server.Mqtt
             return _mqttServer.PublishAsync(applicationMessage);
         }
 
-        void Publish(PythonDictionary parameters)
-        {
-            try
-            {
-                var applicationMessageBuilder = new MqttApplicationMessageBuilder()
-                    .WithTopic((string)parameters.get("topic", null))
-                    .WithRetainFlag((bool)parameters.get("retain", false))
-                    .WithQualityOfServiceLevel((MqttQualityOfServiceLevel)(int)parameters.get("qos", 0));
-
-                var payload = parameters.get("payload", null);
-                byte[] binaryPayload;
-
-                if (payload == null)
-                {
-                    binaryPayload = new byte[0];
-                }
-                else if (payload is string stringPayload)
-                {
-                    binaryPayload = Encoding.UTF8.GetBytes(stringPayload);
-                }
-                else if (payload is ByteArray byteArray)
-                {
-                    binaryPayload = byteArray.ToArray();
-                }
-                else if (payload is IEnumerable<int> intArray)
-                {
-                    binaryPayload = intArray.Select(Convert.ToByte).ToArray();
-                }
-                else
-                {
-                    throw new NotSupportedException("Payload type not supported.");
-                }
-
-                applicationMessageBuilder = applicationMessageBuilder
-                    .WithPayload(binaryPayload);
-
-                var applicationMessage = applicationMessageBuilder.Build();
-
-                _mqttServer.PublishAsync(applicationMessage).GetAwaiter().GetResult();
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Error while publishing application message from server.");
-            }
-        }
 
         IMqttServerOptions CreateMqttServerOptions()
         {

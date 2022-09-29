@@ -66,17 +66,17 @@ namespace MQTTnet.Server.Web
 
             mqttServerService.Configure();
 
-            application.UseSwagger(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
+            application.UseSwagger(); //(o => o.RouteTemplate = "/api/{documentName}/swagger.json");
 
-            application.UseSwaggerUI(o =>
-            {
-                o.RoutePrefix = "api";
-                o.DocumentTitle = "MQTTnet.Server API";
-                o.SwaggerEndpoint("/api/v1/swagger.json", "MQTTnet.Server API v1");
-                o.DisplayRequestDuration();
-                o.DocExpansion(DocExpansion.List);
-                o.DefaultModelRendering(ModelRendering.Model);
-            });
+            application.UseSwaggerUI(); // (o =>
+            //{
+            //    o.RoutePrefix = "api";
+            //    o.DocumentTitle = "MQTTnet.Server API";
+            //    o.SwaggerEndpoint("/api/v1/swagger.json", "MQTTnet.Server API v1");
+            //    o.DisplayRequestDuration();
+            //    o.DocExpansion(DocExpansion.List);
+            //    o.DefaultModelRendering(ModelRendering.Model);
+            //});
         }
 
         public void ConfigureServices(IServiceCollection services)
@@ -104,46 +104,48 @@ namespace MQTTnet.Server.Web
             //services.AddSingleton<MqttServerStorage>();
 
 
-            services.AddSwaggerGen(c =>
-            {
-                var securityScheme = new OpenApiSecurityScheme
-                {
-                    Scheme = "basic",
-                    Name = HeaderNames.Authorization,
-                    Type = SecuritySchemeType.Http,
-                    In = ParameterLocation.Header,
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Swagger"
-                    }
-                };
+            //services.AddSwaggerGen(c =>
+            //{
+            //    var securityScheme = new OpenApiSecurityScheme
+            //    {
+            //        Scheme = "basic",
+            //        Name = HeaderNames.Authorization,
+            //        Type = SecuritySchemeType.Http,
+            //        In = ParameterLocation.Header,
+            //        Reference = new OpenApiReference
+            //        {
+            //            Type = ReferenceType.SecurityScheme,
+            //            Id = "Swagger"
+            //        }
+            //    };
 
-                c.AddSecurityDefinition("Swagger", securityScheme);
+            //    c.AddSecurityDefinition("Swagger", securityScheme);
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    [securityScheme] = new List<string>()
-                });
+            //    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            //    {
+            //        [securityScheme] = new List<string>()
+            //    });
 
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "MQTTnet.Server API",
-                    Version = "v1",
-                    Description = "The public API for the MQTT broker MQTTnet.Server.",
-                    License = new OpenApiLicense
-                    {
-                        Name = "MIT",
-                        Url = new Uri("https://github.com/chkr1011/MQTTnet/blob/master/README.md")
-                    },
-                    Contact = new OpenApiContact
-                    {
-                        Name = "MQTTnet.Server",
-                        Email = string.Empty,
-                        Url = new Uri("https://github.com/chkr1011/MQTTnet")
-                    },
-                });
-            });
+            //    c.SwaggerDoc("v1", new OpenApiInfo
+            //    {
+            //        Title = "MQTTnet.Server API",
+            //        Version = "v1",
+            //        Description = "The public API for the MQTT broker MQTTnet.Server.",
+            //        License = new OpenApiLicense
+            //        {
+            //            Name = "MIT",
+            //            Url = new Uri("https://github.com/chkr1011/MQTTnet/blob/master/README.md")
+            //        },
+            //        Contact = new OpenApiContact
+            //        {
+            //            Name = "MQTTnet.Server",
+            //            Email = string.Empty,
+            //            Url = new Uri("https://github.com/chkr1011/MQTTnet")
+            //        },
+            //    });
+            //});
+
+            services.AddSwaggerGen();
 
             services.AddAuthentication("Basic")
                 .AddScheme<AuthenticationSchemeOptions, AuthenticationHandler>("Basic", null)

@@ -2,12 +2,12 @@
 using Microsoft.Extensions.Logging;
 using MQTTnet.Adapter;
 using MQTTnet.AspNetCore;
-using MQTTnet.Client.Publishing;
+using MQTTnet.Client;
 using MQTTnet.Implementations;
 using MQTTnet.Protocol;
 using MQTTnet.Server.Configuration;
 using MQTTnet.Server.Scripting;
-using MQTTnet.Server.Status;
+using MQTTnet.Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,71 +23,89 @@ namespace MQTTnet.Server.Mqtt
         readonly ILogger<MqttServerService> _logger;
 
         readonly MqttSettingsModel _settings;
-        readonly MqttApplicationMessageInterceptor _mqttApplicationMessageInterceptor;
-        readonly MqttServerStorage _mqttServerStorage;
-        readonly MqttClientConnectedHandler _mqttClientConnectedHandler;
-        readonly MqttClientDisconnectedHandler _mqttClientDisconnectedHandler;
-        readonly MqttClientSubscribedTopicHandler _mqttClientSubscribedTopicHandler;
-        readonly MqttClientUnsubscribedTopicHandler _mqttClientUnsubscribedTopicHandler;
-        readonly MqttServerConnectionValidator _mqttConnectionValidator;
-        readonly IMqttServer _mqttServer;
-        readonly MqttSubscriptionInterceptor _mqttSubscriptionInterceptor;
-        readonly MqttUnsubscriptionInterceptor _mqttUnsubscriptionInterceptor;
+        readonly MqttServer _mqttServer;
         readonly MqttWebSocketServerAdapter _webSocketServerAdapter;
 
         public MqttServerService(
             MqttSettingsModel mqttSettings,
             CustomMqttFactory mqttFactory,
-            MqttClientConnectedHandler mqttClientConnectedHandler,
-            MqttClientDisconnectedHandler mqttClientDisconnectedHandler,
-            MqttClientSubscribedTopicHandler mqttClientSubscribedTopicHandler,
-            MqttClientUnsubscribedTopicHandler mqttClientUnsubscribedTopicHandler,
-            MqttServerConnectionValidator mqttConnectionValidator,
-            MqttSubscriptionInterceptor mqttSubscriptionInterceptor,
-            MqttUnsubscriptionInterceptor mqttUnsubscriptionInterceptor,
-            MqttApplicationMessageInterceptor mqttApplicationMessageInterceptor,
-            MqttServerStorage mqttServerStorage,
             ILogger<MqttServerService> logger)
         {
             _settings = mqttSettings ?? throw new ArgumentNullException(nameof(mqttSettings));
-            _mqttClientConnectedHandler = mqttClientConnectedHandler ?? throw new ArgumentNullException(nameof(mqttClientConnectedHandler));
-            _mqttClientDisconnectedHandler = mqttClientDisconnectedHandler ?? throw new ArgumentNullException(nameof(mqttClientDisconnectedHandler));
-            _mqttClientSubscribedTopicHandler = mqttClientSubscribedTopicHandler ?? throw new ArgumentNullException(nameof(mqttClientSubscribedTopicHandler));
-            _mqttClientUnsubscribedTopicHandler = mqttClientUnsubscribedTopicHandler ?? throw new ArgumentNullException(nameof(mqttClientUnsubscribedTopicHandler));
-            _mqttConnectionValidator = mqttConnectionValidator ?? throw new ArgumentNullException(nameof(mqttConnectionValidator));
-            _mqttSubscriptionInterceptor = mqttSubscriptionInterceptor ?? throw new ArgumentNullException(nameof(mqttSubscriptionInterceptor));
-            _mqttUnsubscriptionInterceptor = mqttUnsubscriptionInterceptor ?? throw new ArgumentNullException(nameof(mqttUnsubscriptionInterceptor));
-            _mqttApplicationMessageInterceptor = mqttApplicationMessageInterceptor ?? throw new ArgumentNullException(nameof(mqttApplicationMessageInterceptor));
-            _mqttServerStorage = mqttServerStorage ?? throw new ArgumentNullException(nameof(mqttServerStorage));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _webSocketServerAdapter = new MqttWebSocketServerAdapter(mqttFactory.Logger);
+            //_webSocketServerAdapter = new MqttWebSocketServerAdapter(mqttFactory.Logger);
 
-            var adapters = new List<IMqttServerAdapter>
-            {
-                new MqttTcpServerAdapter(mqttFactory.Logger)
-                {
-                    TreatSocketOpeningErrorAsWarning = true // Opening other ports than for HTTP is not allows in Azure App Services.
-                },
-                _webSocketServerAdapter
-            };
+            //var adapters = new List<IMqttServerAdapter>
+            //{
+            //    new MqttTcpServerAdapter(mqttFactory.Logger)
+            //    {
+            //        TreatSocketOpeningErrorAsWarning = true // Opening other ports than for HTTP is not allows in Azure App Services.
+            //    },
+            //    _webSocketServerAdapter
+            //};
 
-            _mqttServer = mqttFactory.CreateMqttServer(adapters);
+            _mqttServer = mqttFactory.CreateMqttServer(CreateMqttServerOptions());
         }
 
         public void Configure()
         {
 
-            _mqttServerStorage.Configure();
 
-            _mqttServer.ClientConnectedHandler = _mqttClientConnectedHandler;
-            _mqttServer.ClientDisconnectedHandler = _mqttClientDisconnectedHandler;
-            _mqttServer.ClientSubscribedTopicHandler = _mqttClientSubscribedTopicHandler;
-            _mqttServer.ClientUnsubscribedTopicHandler = _mqttClientUnsubscribedTopicHandler;
+            _mqttServer.ClientConnectedAsync += _mqttServer_ClientConnectedAsync; //+= _mqttClientConnectedHandler;
+            _mqttServer.ClientDisconnectedAsync += _mqttServer_ClientDisconnectedAsync;  //= _mqttClientDisconnectedHandler;
+            _mqttServer.ClientSubscribedTopicAsync += _mqttServer_ClientSubscribedTopicAsync; // = _mqttClientSubscribedTopicHandler;
+            _mqttServer.ClientUnsubscribedTopicAsync += _mqttServer_ClientUnsubscribedTopicAsync; // = _mqttClientUnsubscribedTopicHandler;
+            _mqttServer.InterceptingPublishAsync += _mqttServer_InterceptingPublishAsync;
 
-            _mqttServer.StartAsync(CreateMqttServerOptions()).GetAwaiter().GetResult();
+            _mqttServer.StartAsync().GetAwaiter().GetResult();
 
             _logger.LogInformation("MQTT server started.");
+        }
+
+        private Task _mqttServer_InterceptingPublishAsync(InterceptingPublishEventArgs arg)
+        {
+            return Task.Run(() =>
+            {
+                _logger.LogInformation($"Intercepting Publish {arg.ApplicationMessage.Topic}!");
+            }
+        );
+        }
+
+        private Task _mqttServer_ClientUnsubscribedTopicAsync(ClientUnsubscribedTopicEventArgs arg)
+        {
+            return Task.Run(() =>
+            {
+                _logger.LogInformation($"Client unsubscribed to topic {arg.TopicFilter}!");
+            }
+        );
+        }
+
+        private Task _mqttServer_ClientSubscribedTopicAsync(ClientSubscribedTopicEventArgs arg)
+        {
+            return Task.Run(() =>
+            {
+                _logger.LogInformation($"Client subscribed to topic {arg.TopicFilter}!");
+            }
+        );
+        }
+
+        private Task _mqttServer_ClientDisconnectedAsync(ClientDisconnectedEventArgs arg)
+        {
+            return Task.Run(() =>
+            {
+                _logger.LogInformation("Client disconnected!");
+            }
+        );
+        }
+
+        private Task _mqttServer_ClientConnectedAsync(ClientConnectedEventArgs arg)
+        {
+            return Task.Run(() =>
+        {
+            _logger.LogInformation("Client connected!");
+        }
+        );
         }
 
         public Task RunWebSocketConnectionAsync(WebSocket webSocket, HttpContext httpContext)
@@ -95,44 +113,44 @@ namespace MQTTnet.Server.Mqtt
             return _webSocketServerAdapter.RunWebSocketConnectionAsync(webSocket, httpContext);
         }
 
-        public Task<IList<IMqttClientStatus>> GetClientStatusAsync()
+        public Task<IList<MqttClientStatus>> GetClientStatusAsync()
         {
-            return _mqttServer.GetClientStatusAsync();
+            return _mqttServer.GetClientsAsync();
         }
 
-        public Task<IList<IMqttSessionStatus>> GetSessionStatusAsync()
+        public Task<IList<MqttSessionStatus>> GetSessionStatusAsync()
         {
-            return _mqttServer.GetSessionStatusAsync();
+            return _mqttServer.GetSessionsAsync();
         }
 
         public Task ClearRetainedApplicationMessagesAsync()
         {
-            return _mqttServer.ClearRetainedApplicationMessagesAsync();
+            return _mqttServer.DeleteRetainedMessagesAsync();
         }
 
         public Task<IList<MqttApplicationMessage>> GetRetainedApplicationMessagesAsync()
         {
-            return _mqttServer.GetRetainedApplicationMessagesAsync();
+            return _mqttServer.GetRetainedMessagesAsync();
         }
 
-        public Task<MqttClientPublishResult> PublishAsync(MqttApplicationMessage applicationMessage)
+        public Task PublishAsync(MqttApplicationMessage applicationMessage)
         {
             if (applicationMessage == null) throw new ArgumentNullException(nameof(applicationMessage));
 
-            return _mqttServer.PublishAsync(applicationMessage);
+            return _mqttServer.InjectApplicationMessage(new InjectedMqttApplicationMessage(applicationMessage));
         }
 
 
-        IMqttServerOptions CreateMqttServerOptions()
+        MqttServerOptions CreateMqttServerOptions()
         {
             var options = new MqttServerOptionsBuilder()
                 .WithMaxPendingMessagesPerClient(_settings.MaxPendingMessagesPerClient)
-                .WithDefaultCommunicationTimeout(TimeSpan.FromSeconds(_settings.CommunicationTimeout))
-                .WithConnectionValidator(_mqttConnectionValidator)
-                .WithApplicationMessageInterceptor(_mqttApplicationMessageInterceptor)
-                .WithSubscriptionInterceptor(_mqttSubscriptionInterceptor)
-                .WithUnsubscriptionInterceptor(_mqttUnsubscriptionInterceptor)
-                .WithStorage(_mqttServerStorage);
+                .WithDefaultCommunicationTimeout(TimeSpan.FromSeconds(_settings.CommunicationTimeout));
+            //.WithConnectionValidator(_mqttConnectionValidator)
+            //.WithApplicationMessageInterceptor(_mqttApplicationMessageInterceptor)
+            //.WithSubscriptionInterceptor(_mqttSubscriptionInterceptor)
+            //.WithUnsubscriptionInterceptor(_mqttUnsubscriptionInterceptor)
+            //.WithStorage(_mqttServerStorage);
 
             // Configure unencrypted connections
             if (_settings.TcpEndPoint.Enabled)

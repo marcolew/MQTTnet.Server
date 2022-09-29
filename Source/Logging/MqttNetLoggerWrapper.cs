@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Microsoft.Extensions.Logging;
-using MQTTnet.Diagnostics.Logger;
+using MQTTnet.Diagnostics;
 
 namespace MQTTnet.Server.Logging;
 

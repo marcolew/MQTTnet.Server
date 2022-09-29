@@ -101,16 +101,8 @@ namespace MQTTnet.Server.Web
             services.AddSingleton<MqttNetLoggerWrapper>();
             services.AddSingleton<CustomMqttFactory>();
             services.AddSingleton<MqttServerService>();
-            services.AddSingleton<MqttServerStorage>();
+            //services.AddSingleton<MqttServerStorage>();
 
-            services.AddSingleton<MqttClientConnectedHandler>();
-            services.AddSingleton<MqttClientDisconnectedHandler>();
-            services.AddSingleton<MqttClientSubscribedTopicHandler>();
-            services.AddSingleton<MqttClientUnsubscribedTopicHandler>();
-            services.AddSingleton<MqttServerConnectionValidator>();
-            services.AddSingleton<MqttSubscriptionInterceptor>();
-            services.AddSingleton<MqttUnsubscriptionInterceptor>();
-            services.AddSingleton<MqttApplicationMessageInterceptor>();
 
             services.AddSwaggerGen(c =>
             {

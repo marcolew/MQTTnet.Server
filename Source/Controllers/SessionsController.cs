@@ -7,7 +7,7 @@ using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MQTTnet.Server.Mqtt;
-using MQTTnet.Server.Status;
+using MQTTnet.Server;
 
 namespace MQTTnet.Server.Controllers
 {
@@ -24,18 +24,18 @@ namespace MQTTnet.Server.Controllers
 
         [Route("api/v1/sessions")]
         [HttpGet]
-        public async Task<ActionResult<IList<IMqttSessionStatus>>> GetSessions()
+        public async Task<ActionResult<IList<MqttSessionStatus>>> GetSessions()
         {
             return new ObjectResult(await _mqttServerService.GetSessionStatusAsync());
         }
 
         [Route("api/v1/sessions/{clientId}")]
         [HttpGet]
-        public async Task<ActionResult<IMqttClientStatus>> GetSession(string clientId)
+        public async Task<ActionResult<MqttClientStatus>> GetSession(string clientId)
         {
             clientId = HttpUtility.UrlDecode(clientId);
 
-            var session = (await _mqttServerService.GetSessionStatusAsync()).FirstOrDefault(c => c.ClientId == clientId);
+            var session = (await _mqttServerService.GetSessionStatusAsync()).FirstOrDefault(c => c.Id == clientId);
             if (session == null)
             {
                 return new StatusCodeResult((int)HttpStatusCode.NotFound);
@@ -50,7 +50,7 @@ namespace MQTTnet.Server.Controllers
         {
             clientId = HttpUtility.UrlDecode(clientId);
 
-            var session = (await _mqttServerService.GetSessionStatusAsync()).FirstOrDefault(c => c.ClientId == clientId);
+            var session = (await _mqttServerService.GetSessionStatusAsync()).FirstOrDefault(c => c.Id == clientId);
             if (session == null)
             {
                 return new StatusCodeResult((int)HttpStatusCode.NotFound);
@@ -66,13 +66,13 @@ namespace MQTTnet.Server.Controllers
         {
             clientId = HttpUtility.UrlDecode(clientId);
 
-            var session = (await _mqttServerService.GetSessionStatusAsync()).FirstOrDefault(c => c.ClientId == clientId);
+            var session = (await _mqttServerService.GetSessionStatusAsync()).FirstOrDefault(c => c.Id == clientId);
             if (session == null)
             {
                 return new StatusCodeResult((int)HttpStatusCode.NotFound);
             }
 
-            await session.ClearPendingApplicationMessagesAsync();
+            await session.ClearApplicationMessagesQueueAsync();
             return StatusCode((int)HttpStatusCode.NoContent);
         }
     }

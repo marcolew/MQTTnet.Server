@@ -7,7 +7,7 @@ using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MQTTnet.Server.Mqtt;
-using MQTTnet.Server.Status;
+using MQTTnet.Server;
 
 namespace MQTTnet.Server.Controllers
 {
@@ -24,18 +24,18 @@ namespace MQTTnet.Server.Controllers
 
         [Route("api/v1/clients")]
         [HttpGet]
-        public async Task<ActionResult<IList<IMqttClientStatus>>> GetClients()
+        public async Task<ActionResult<IList<MqttClientStatus>>> GetClients()
         {
             return new ObjectResult(await _mqttServerService.GetClientStatusAsync());
         }
 
         [Route("api/v1/clients/{clientId}")]
         [HttpGet]
-        public async Task<ActionResult<IMqttClientStatus>> GetClient(string clientId)
+        public async Task<ActionResult<MqttClientStatus>> GetClient(string clientId)
         {
             clientId = HttpUtility.UrlDecode(clientId);
 
-            var client = (await _mqttServerService.GetClientStatusAsync()).FirstOrDefault(c => c.ClientId == clientId);
+            var client = (await _mqttServerService.GetClientStatusAsync()).FirstOrDefault(c => c.Id == clientId);
             if (client == null)
             {
                 return new StatusCodeResult((int)HttpStatusCode.NotFound);
@@ -50,7 +50,7 @@ namespace MQTTnet.Server.Controllers
         {
             clientId = HttpUtility.UrlDecode(clientId);
 
-            var client = (await _mqttServerService.GetClientStatusAsync()).FirstOrDefault(c => c.ClientId == clientId);
+            var client = (await _mqttServerService.GetClientStatusAsync()).FirstOrDefault(c => c.Id == clientId);
             if (client == null)
             {
                 return new StatusCodeResult((int)HttpStatusCode.NotFound);
@@ -66,7 +66,7 @@ namespace MQTTnet.Server.Controllers
         {
             clientId = HttpUtility.UrlDecode(clientId);
 
-            var client = (await _mqttServerService.GetClientStatusAsync()).FirstOrDefault(c => c.ClientId == clientId);
+            var client = (await _mqttServerService.GetClientStatusAsync()).FirstOrDefault(c => c.Id == clientId);
             if (client == null)
             {
                 return new StatusCodeResult((int)HttpStatusCode.NotFound);

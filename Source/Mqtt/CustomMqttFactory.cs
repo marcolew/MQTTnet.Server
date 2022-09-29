@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using MQTTnet.Adapter;
 using MQTTnet.Diagnostics;
-using MQTTnet.Diagnostics.Logger;
 using MQTTnet.Server.Configuration;
 using MQTTnet.Server.Logging;
 
@@ -39,11 +38,10 @@ namespace MQTTnet.Server.Mqtt
         
         public IMqttNetLogger Logger { get; }
 
-        public IMqttServer CreateMqttServer(List<IMqttServerAdapter> adapters)
+        public MqttServer CreateMqttServer(MqttServerOptions options)
         {
-            if (adapters == null) throw new ArgumentNullException(nameof(adapters));
 
-            return _mqttFactory.CreateMqttServer(adapters);
+            return _mqttFactory.CreateMqttServer(options);
         }
     }
 }

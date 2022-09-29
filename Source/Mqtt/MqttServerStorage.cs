@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace MQTTnet.Server.Mqtt
 {
-    public class MqttServerStorage : IMqttServerStorage
+    public class MqttServerStorage //: IMqttServerStorage
     {
         private readonly List<MqttApplicationMessage> _messages = new List<MqttApplicationMessage>();
 

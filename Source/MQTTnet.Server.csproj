@@ -11,7 +11,6 @@
     <Description>Standalone MQTT server with Python scripting backend.</Description>
     <Authors>The authors of MQTTnet.Server.</Authors>
     <SignAssembly>false</SignAssembly>
-    <DelaySign>false</DelaySign>
     <LangVersion>latest</LangVersion>
     <Version>3.0.11</Version>
     <TypeScriptToolsVersion>3.3</TypeScriptToolsVersion>
@@ -31,6 +30,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="server.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ca.crt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <Content Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -47,6 +54,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="server.pfx" />
+    <None Remove="ca.crt" />
+  </ItemGroup>
+  <ItemGroup>
     <None Update="LICENSE">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -61,6 +72,9 @@
     </None>
     <None Update="Web\wwwroot\pahoJS_Test.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="ca.crt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

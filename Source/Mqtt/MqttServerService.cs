@@ -15,6 +15,9 @@ using System.Net.WebSockets;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
+using System.Security.Cryptography.X509Certificates;
+using System.IO;
+using System.Net.Security;
 
 namespace MQTTnet.Server.Mqtt
 {
@@ -23,8 +26,12 @@ namespace MQTTnet.Server.Mqtt
         readonly ILogger<MqttServerService> _logger;
 
         readonly MqttSettingsModel _settings;
+        private X509Certificate2 ca;
         readonly MqttServer _mqttServer;
         readonly MqttWebSocketServerAdapter _webSocketServerAdapter;
+        private X509Certificate2 certificate;
+
+
 
         public MqttServerService(
             MqttSettingsModel mqttSettings,
@@ -44,6 +51,11 @@ namespace MQTTnet.Server.Mqtt
             //    },
             //    _webSocketServerAdapter
             //};
+            var pfx = new FileInfo("server.pfx");
+            certificate = new X509Certificate2(pfx.FullName, ".SWMS4lew", X509KeyStorageFlags.Exportable);
+
+            var caFile = new FileInfo("ca.crt");
+            ca = new X509Certificate2(caFile.FullName);
 
             _mqttServer = mqttFactory.CreateMqttServer(CreateMqttServerOptions());
         }
@@ -145,7 +157,16 @@ namespace MQTTnet.Server.Mqtt
         {
             var options = new MqttServerOptionsBuilder()
                 .WithMaxPendingMessagesPerClient(_settings.MaxPendingMessagesPerClient)
-                .WithDefaultCommunicationTimeout(TimeSpan.FromSeconds(_settings.CommunicationTimeout));
+                .WithDefaultCommunicationTimeout(TimeSpan.FromSeconds(_settings.CommunicationTimeout))
+                                        .WithEncryptedEndpoint()
+                        .WithEncryptedEndpointPort(2000)
+                        .WithEncryptionCertificate(certificate.Export(X509ContentType.Pfx))
+                        //.WithRemoteCertificateValidationCallback((obj, cert, chain, ssl) => { return true; })
+                        .WithEncryptionSslProtocol(SslProtocols.Tls12);
+
+
+            //.WithoutDefaultEndpoint();
+
             //.WithConnectionValidator(_mqttConnectionValidator)
             //.WithApplicationMessageInterceptor(_mqttApplicationMessageInterceptor)
             //.WithSubscriptionInterceptor(_mqttSubscriptionInterceptor)
@@ -153,89 +174,118 @@ namespace MQTTnet.Server.Mqtt
             //.WithStorage(_mqttServerStorage);
 
             // Configure unencrypted connections
-            if (_settings.TcpEndPoint.Enabled)
-            {
-                options.WithDefaultEndpoint();
+            //if (_settings.TcpEndPoint.Enabled)
+            //{
+            ///    options.WithDefaultEndpoint();
 
-                if (_settings.TcpEndPoint.TryReadIPv4(out var address4))
-                {
-                    options.WithDefaultEndpointBoundIPAddress(address4);
-                }
+            //    if (_settings.TcpEndPoint.TryReadIPv4(out var address4))
+            //  {
+            //       options.WithDefaultEndpointBoundIPAddress(address4);
+            //   }
 
-                if (_settings.TcpEndPoint.TryReadIPv6(out var address6))
-                {
-                    options.WithDefaultEndpointBoundIPV6Address(address6);
-                }
+            //   if (_settings.TcpEndPoint.TryReadIPv6(out var address6))
+            //   {
+            //       options.WithDefaultEndpointBoundIPV6Address(address6);
+            //    }
 
-                if (_settings.TcpEndPoint.Port > 0)
-                {
-                    options.WithDefaultEndpointPort(_settings.TcpEndPoint.Port);
-                }
-            }
-            else
-            {
-                options.WithoutDefaultEndpoint();
-            }
+            //     if (_settings.TcpEndPoint.Port > 0)
+            //   {
+            //        options.WithDefaultEndpointPort(_settings.TcpEndPoint.Port);
+            //    }
+            // }
+            // else
+            //{
+            //     options.WithoutDefaultEndpoint();
+            // }
 
             // Configure encrypted connections
-            if (_settings.EncryptedTcpEndPoint.Enabled)
+            //if (_settings.EncryptedTcpEndPoint.Enabled)
+            // {
+            //#if NETCOREAPP3_1 || NET5_0
+            //              options
+            //                .WithEncryptedEndpoint()
+            //              .WithEncryptionSslProtocol(SslProtocols.Tls13);/
+            //#else
+            //              options
+            //                .WithEncryptedEndpoint()
+            //              .WithEncryptionSslProtocol(SslProtocols.Tls12);
+            //#endif
+
+            //              if (!string.IsNullOrEmpty(_settings.EncryptedTcpEndPoint?.Certificate?.Path))
+            //            {
+            //              IMqttServerCertificateCredentials certificateCredentials = null;
+
+            //             if (!string.IsNullOrEmpty(_settings.EncryptedTcpEndPoint?.Certificate?.Password))
+            //         {
+            //               certificateCredentials = new MqttServerCertificateCredentials
+            //               {
+            //                  Password = _settings.EncryptedTcpEndPoint.Certificate.Password
+            //              };
+            //          }
+
+            //          options.WithEncryptionCertificate(_settings.EncryptedTcpEndPoint.Certificate.ReadCertificate(), certificateCredentials);
+            //      }
+
+            //     if (_settings.EncryptedTcpEndPoint.TryReadIPv4(out var address4))
+            //     {
+            //         options.WithEncryptedEndpointBoundIPAddress(address4);
+            //     }
+
+            //       if (_settings.EncryptedTcpEndPoint.TryReadIPv6(out var address6))
+            //     {
+            //          options.WithEncryptedEndpointBoundIPV6Address(address6);
+            //      }
+
+            //      if (_settings.EncryptedTcpEndPoint.Port > 0)
+            //      {
+            //           options.WithEncryptedEndpointPort(_settings.EncryptedTcpEndPoint.Port);
+            //      }
+            //   }
+            //   else
+            //   {
+            //       options.WithoutEncryptedEndpoint();
+            //   }
+
+            //    if (_settings.ConnectionBacklog > 0)
+            //    {
+            //      options.WithConnectionBacklog(_settings.ConnectionBacklog);
+            //  }
+
+            //  if (_settings.EnablePersistentSessions)
+            // {
+            //   options.WithPersistentSessions();
+            //  }
+
+            var opt = options.Build();
+            opt.DefaultEndpointOptions.IsEnabled = false;
+            opt.TlsEndpointOptions.ClientCertificateRequired = true;
+
+            opt.TlsEndpointOptions.RemoteCertificateValidationCallback += (sender, cer, chain, sslPolicyErrors) =>
             {
-#if NETCOREAPP3_1 || NET5_0
-                options
-                    .WithEncryptedEndpoint()
-                    .WithEncryptionSslProtocol(SslProtocols.Tls13);
-#else
-                options
-                    .WithEncryptedEndpoint()
-                    .WithEncryptionSslProtocol(SslProtocols.Tls12);
-#endif
-
-                if (!string.IsNullOrEmpty(_settings.EncryptedTcpEndPoint?.Certificate?.Path))
+                try
                 {
-                    IMqttServerCertificateCredentials certificateCredentials = null;
-
-                    if (!string.IsNullOrEmpty(_settings.EncryptedTcpEndPoint?.Certificate?.Password))
+                    if (sslPolicyErrors == SslPolicyErrors.None)
                     {
-                        certificateCredentials = new MqttServerCertificateCredentials
-                        {
-                            Password = _settings.EncryptedTcpEndPoint.Certificate.Password
-                        };
+                        return true;
                     }
 
-                    options.WithEncryptionCertificate(_settings.EncryptedTcpEndPoint.Certificate.ReadCertificate(), certificateCredentials);
+                    if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors)
+                    {
+                        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                        chain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag;
+                        chain.ChainPolicy.ExtraStore.Add(ca);
+
+                        chain.Build((X509Certificate2)cer);
+
+                        return chain.ChainElements.Cast<X509ChainElement>().Any(a => a.Certificate.Thumbprint == ca.Thumbprint);
+                    }
                 }
+                catch { }
 
-                if (_settings.EncryptedTcpEndPoint.TryReadIPv4(out var address4))
-                {
-                    options.WithEncryptedEndpointBoundIPAddress(address4);
-                }
+                return false;
+            };
 
-                if (_settings.EncryptedTcpEndPoint.TryReadIPv6(out var address6))
-                {
-                    options.WithEncryptedEndpointBoundIPV6Address(address6);
-                }
-
-                if (_settings.EncryptedTcpEndPoint.Port > 0)
-                {
-                    options.WithEncryptedEndpointPort(_settings.EncryptedTcpEndPoint.Port);
-                }
-            }
-            else
-            {
-                options.WithoutEncryptedEndpoint();
-            }
-
-            if (_settings.ConnectionBacklog > 0)
-            {
-                options.WithConnectionBacklog(_settings.ConnectionBacklog);
-            }
-
-            if (_settings.EnablePersistentSessions)
-            {
-                options.WithPersistentSessions();
-            }
-
-            return options.Build();
+            return opt;
         }
     }
 }

@@ -11,7 +11,7 @@ using MQTTnet.Server;
 
 namespace MQTTnet.Server.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [ApiController]
     public class SessionsController : Controller
     {

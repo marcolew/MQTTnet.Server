@@ -63,7 +63,7 @@ namespace MQTTnet.Server.Mqtt
         public void Configure()
         {
 
-
+            _mqttServer.ValidatingConnectionAsync += _mqttServer_ValidatingConnectionAsync;
             _mqttServer.ClientConnectedAsync += _mqttServer_ClientConnectedAsync; //+= _mqttClientConnectedHandler;
             _mqttServer.ClientDisconnectedAsync += _mqttServer_ClientDisconnectedAsync;  //= _mqttClientDisconnectedHandler;
             _mqttServer.ClientSubscribedTopicAsync += _mqttServer_ClientSubscribedTopicAsync; // = _mqttClientSubscribedTopicHandler;
@@ -73,6 +73,16 @@ namespace MQTTnet.Server.Mqtt
             _mqttServer.StartAsync().GetAwaiter().GetResult();
 
             _logger.LogInformation("MQTT server started.");
+        }
+
+        private Task _mqttServer_ValidatingConnectionAsync(ValidatingConnectionEventArgs arg)
+        {
+                _logger.LogInformation($"Validating connection. {arg.ClientId} {arg.ClientCertificate.Subject} ");
+                if (arg.ClientCertificate.Subject.ToLowerInvariant().Contains(arg.ClientId.ToLowerInvariant()) == false)
+                {
+                    return Task.FromException(new Exception("User not authorized"));
+                }
+            return Task.CompletedTask;
         }
 
         private Task _mqttServer_InterceptingPublishAsync(InterceptingPublishEventArgs arg)
@@ -115,7 +125,8 @@ namespace MQTTnet.Server.Mqtt
         {
             return Task.Run(() =>
         {
-            _logger.LogInformation("Client connected!");
+            _logger.LogInformation($"Client connected! {arg.ClientId}");
+            
         }
         );
         }
@@ -163,7 +174,6 @@ namespace MQTTnet.Server.Mqtt
                         .WithEncryptionCertificate(certificate.Export(X509ContentType.Pfx))
                         //.WithRemoteCertificateValidationCallback((obj, cert, chain, ssl) => { return true; })
                         .WithEncryptionSslProtocol(SslProtocols.Tls12);
-
 
             //.WithoutDefaultEndpoint();
 
@@ -257,6 +267,7 @@ namespace MQTTnet.Server.Mqtt
             //  }
 
             var opt = options.Build();
+
             opt.DefaultEndpointOptions.IsEnabled = false;
             opt.TlsEndpointOptions.ClientCertificateRequired = true;
 
@@ -264,6 +275,11 @@ namespace MQTTnet.Server.Mqtt
             {
                 try
                 {
+                    if (cer != null)
+                    {
+                        string hostName = ((X509Certificate)cer).GetIssuerName();
+                    }
+
                     if (sslPolicyErrors == SslPolicyErrors.None)
                     {
                         return true;

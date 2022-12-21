@@ -90,6 +90,7 @@ namespace MQTTnet.Server.Mqtt
             return Task.Run(() =>
             {
                 _logger.LogInformation($"Intercepting Publish {arg.ApplicationMessage.Topic}!");
+
             }
         );
         }
